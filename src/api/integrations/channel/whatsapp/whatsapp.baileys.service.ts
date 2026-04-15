@@ -2986,6 +2986,43 @@ export class BaileysStartupService extends ChannelStartupService {
     if (file) mediaData.media = file.buffer.toString('base64');
 
     const generate = await this.prepareMediaMessage(mediaData);
+    
+    // Inject custom externalAdReply wrapper for Newsletters to bypass native CDN blocks
+    if (data.number.includes('@newsletter') || data.number.includes('@broadcast')) {
+      let imageBuffer: Buffer;
+      if (isURL(mediaData.media)) {
+        const response = await axios.get(mediaData.media, { responseType: 'arraybuffer' });
+        imageBuffer = Buffer.from(response.data, 'binary');
+      } else {
+        imageBuffer = Buffer.from(mediaData.media, 'base64');
+      }
+      
+      const adReplyContext = {
+        externalAdReply: {
+          title: '📢 Deal Alert',
+          body: '',
+          mediaType: 1, // 1 renders Image Thumbnail formats
+          thumbnail: await sharp(imageBuffer).jpeg().toBuffer(),
+          renderLargerThumbnail: true,
+          sourceUrl: mediaData.media
+        }
+      };
+
+      const mediaSent = await this.sendMessageWithTyping(
+        data.number,
+        {
+          conversation: mediaData.caption || '',
+          contextInfo: adReplyContext
+        },
+        {
+          delay: data?.delay,
+          presence: 'composing',
+        },
+        isIntegration,
+      );
+      
+      return mediaSent;
+    }
 
     const mediaSent = await this.sendMessageWithTyping(
       data.number,
