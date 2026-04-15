@@ -2395,17 +2395,19 @@ export class BaileysStartupService extends ChannelStartupService {
           // group?.participants,
         );
       } else {
-        contextInfo = {
-          mentionedJid: [],
-          groupMentions: [],
-          //expiration: 7776000,
-          ephemeralSettingTimestamp: {
-            low: Math.floor(Date.now() / 1000) - 172800,
-            high: 0,
-            unsigned: false,
-          },
-          disappearingMode: { initiator: 0 },
-        };
+        if (!sender.includes('@newsletter') && !sender.includes('@broadcast')) {
+          contextInfo = {
+            mentionedJid: [],
+            groupMentions: [],
+            //expiration: 7776000,
+            ephemeralSettingTimestamp: {
+              low: Math.floor(Date.now() / 1000) - 172800,
+              high: 0,
+              unsigned: false,
+            },
+            disappearingMode: { initiator: 0 },
+          };
+        }
         messageSent = await this.sendMessage(
           sender,
           message,
